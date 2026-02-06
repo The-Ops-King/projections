@@ -451,10 +451,7 @@
     // App — manages filters, loading, and data fetching
     // ============================================================
     function App() {
-      const urlClientId = getClientId();
-      const [clientId, setClientId] = useState(urlClientId);
-      const [clients, setClients] = useState([]);
-      const [showClientPicker, setShowClientPicker] = useState(!urlClientId);
+      const clientId = getClientId();
       const [closers, setClosers] = useState([]);
       const [selectedCloser, setSelectedCloser] = useState("");
       const [startDate, setStartDate] = useState("");
@@ -466,30 +463,12 @@
       const [loading, setLoading] = useState(true);
       const [fetching, setFetching] = useState(false);
 
-      // If no clientId in URL, fetch client list
       useEffect(() => {
-        if (!urlClientId) {
-          fetch(`${API_URL}?action=clients`)
-            .then(r => r.json())
-            .then(data => {
-              setClients(data.clients || []);
-              setLoading(false);
-            })
-            .catch(err => {
-              setError(err.message);
-              setLoading(false);
-            });
+        if (!clientId) {
+          setError("Missing clientId in URL. Use ?clientId=your_id or ?clientId=all");
+          setLoading(false);
+          return;
         }
-      }, []);
-
-      // When clientId is set (from URL or picker), load closers + date range + baseline
-      useEffect(() => {
-        if (!clientId) return;
-
-        setLoading(true);
-        setShowClientPicker(false);
-        setBaseline(null);
-        setSelectedCloser("");
 
         Promise.all([
           fetch(`${API_URL}?action=closers&clientId=${clientId}`).then(r => r.json()),
@@ -507,17 +486,16 @@
           const effectiveStart = startStr < min ? min : startStr;
           setStartDate(effectiveStart);
           setEndDate(max);
-          return fetchBaseline(effectiveStart, max, "", clientId);
+          return fetchBaseline(effectiveStart, max, "");
         }).catch(err => {
           setError(err.message);
           setLoading(false);
         });
-      }, [clientId]);
+      }, []);
 
-      const fetchBaseline = useCallback((sd, ed, closer, cid) => {
-        const id = cid || clientId;
+      const fetchBaseline = useCallback((sd, ed, closer) => {
         setFetching(true);
-        let url = `${API_URL}?clientId=${id}&startDate=${sd}&endDate=${ed}`;
+        let url = `${API_URL}?clientId=${clientId}&startDate=${sd}&endDate=${ed}`;
         if (closer) url += `&closerId=${closer}`;
 
         return fetch(url)
@@ -541,58 +519,11 @@
         }
       };
 
-      // Client picker screen
-      if (showClientPicker && !clientId) {
-        if (loading) {
-          return (
-            <div className="loading-screen">
-              <div className="loading-spinner"></div>
-              Loading clients...
-            </div>
-          );
-        }
+      if (!clientId) {
         return (
-          <div style={{
-            background: C.pageBg, minHeight: "100vh", display: "flex",
-            alignItems: "center", justifyContent: "center",
-            fontFamily: "'Google Sans', 'Segoe UI', system-ui, sans-serif",
-          }}>
-            <div style={{
-              background: C.cardBg, border: `1px solid ${C.cardBorder}`, borderRadius: 12,
-              padding: "40px 48px", maxWidth: 480, width: "100%", textAlign: "center",
-            }}>
-              <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 700, color: C.white }}>
-                CloserMetrix <span style={{ color: C.blue }}>INSIGHT</span>
-              </h1>
-              <p style={{ margin: "0 0 28px", fontSize: 14, color: C.textSecondary }}>
-                Select a client to view projections
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {clients.map(c => (
-                  <button key={c.client_id} onClick={() => setClientId(c.client_id)}
-                    style={{
-                      background: C.sectionBg, border: `1px solid ${C.cardBorder}`,
-                      borderRadius: 6, padding: "12px 16px", cursor: "pointer",
-                      textAlign: "left", transition: "border-color 0.2s",
-                    }}
-                    onMouseOver={e => e.currentTarget.style.borderColor = C.blue}
-                    onMouseOut={e => e.currentTarget.style.borderColor = C.cardBorder}
-                  >
-                    <div style={{ fontSize: 15, fontWeight: 600, color: C.white }}>
-                      {c.name || c.company_name || c.client_id}
-                    </div>
-                    {c.company_name && c.name !== c.company_name && (
-                      <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>{c.company_name}</div>
-                    )}
-                  </button>
-                ))}
-                {clients.length === 0 && (
-                  <div style={{ color: C.textMuted, fontSize: 14, padding: 20 }}>
-                    No clients found
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="error-screen">
+            <div style={{ fontSize: 24, fontWeight: 700 }}>⚠️ Missing Client</div>
+            <div>Use ?clientId=your_id or ?clientId=all</div>
           </div>
         );
       }
