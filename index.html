@@ -664,7 +664,12 @@
 
           {/* Overlay while fetching new data */}
           <div style={{ position: "relative", opacity: fetching ? 0.4 : 1, transition: "opacity 0.3s" }}>
-            <Projections baseline={baseline} />
+            {baseline ? <Projections baseline={baseline} /> : (
+              <div className="loading-screen" style={{ minHeight: 400 }}>
+                <div className="loading-spinner"></div>
+                Loading data...
+              </div>
+            )}
           </div>
         </div>
       );
