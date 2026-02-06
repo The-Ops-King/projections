@@ -22,12 +22,22 @@
     .error-screen {
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh; color: #ef5350; font-size: 16px;
-      flex-direction: column; gap: 12px; padding: 40px;
-      text-align: center;
+      flex-direction: column; gap: 12px; padding: 40px; text-align: center;
     }
     .error-screen code {
       background: #1e2a3a; padding: 12px 20px; border-radius: 6px;
       font-size: 13px; color: #8899aa; max-width: 600px; word-break: break-all;
+    }
+    input[type="date"] {
+      background: #1a2332; color: #e8ecf1; border: 1px solid #2a3a4e;
+      padding: 6px 10px; border-radius: 4px; font-size: 13px;
+      font-family: inherit; cursor: pointer;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+    select {
+      background: #1a2332; color: #e8ecf1; border: 1px solid #2a3a4e;
+      padding: 6px 10px; border-radius: 4px; font-size: 13px;
+      font-family: inherit; cursor: pointer; min-width: 140px;
     }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -43,22 +53,11 @@
   </div>
 
   <script type="text/babel">
-    // ============================================================
-    // CONFIGURATION — Update this URL after deploying Cloud Function
-    // ============================================================
     const API_URL = "https://projections-api-607906164358.us-west2.run.app";
+    const { useState, useMemo, useEffect, useCallback } = React;
 
-    const { useState, useMemo, useEffect } = React;
-
-    // Read URL params
-    function getParams() {
-      const params = new URLSearchParams(window.location.search);
-      return {
-        clientId: params.get("clientId") || "",
-        startDate: params.get("startDate") || "",
-        endDate: params.get("endDate") || "",
-        closerId: params.get("closerId") || "",
-      };
+    function getClientId() {
+      return new URLSearchParams(window.location.search).get("clientId") || "";
     }
 
     const fmt = (n) => Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -101,7 +100,6 @@
       const bg = zero ? "rgba(100,120,140,0.08)" : positive ? "rgba(102,187,106,0.1)" : "rgba(239,83,80,0.1)";
       const bdr = zero ? "rgba(100,120,140,0.15)" : positive ? "rgba(102,187,106,0.25)" : "rgba(239,83,80,0.25)";
       const arrow = zero ? "–" : positive ? "▲" : "▼";
-
       return (
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
@@ -116,29 +114,20 @@
     }
 
     function Slider({ label, value, onChange, range, step, unit, color, formatVal }) {
-      const min = -range;
-      const max = range;
+      const min = -range, max = range;
       const pct = ((value - min) / (max - min)) * 100;
       const displayVal = formatVal ? formatVal(value) : value;
       const fillLeft = value >= 0 ? 50 : pct;
       const fillWidth = value >= 0 ? pct - 50 : 50 - pct;
-
       return (
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: C.textSecondary, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              {label}
-            </span>
-            <span style={{ fontSize: 16, fontWeight: 700, color }}>
-              {value > 0 ? "+" : ""}{displayVal}{unit}
-            </span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: C.textSecondary, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color }}>{value > 0 ? "+" : ""}{displayVal}{unit}</span>
           </div>
           <div style={{ position: "relative", height: 28, display: "flex", alignItems: "center" }}>
             <div style={{ position: "absolute", width: "100%", height: 6, background: C.headerBg, borderRadius: 3 }} />
-            <div style={{
-              position: "absolute", left: "50%", width: 2, height: 14,
-              background: C.textMuted, borderRadius: 1, transform: "translateX(-1px)",
-            }} />
+            <div style={{ position: "absolute", left: "50%", width: 2, height: 14, background: C.textMuted, borderRadius: 1, transform: "translateX(-1px)" }} />
             <div style={{
               position: "absolute", left: `${fillLeft}%`, width: `${fillWidth}%`, height: 6,
               background: value === 0 ? "transparent" : value < 0 ? C.red : color,
@@ -186,7 +175,6 @@
       const display = zero ? (isDollar ? "$0" : "0") : isDollar
         ? (positive ? "+$" : "-$") + fmt(num) : (positive ? "+" : "-") + fmt(num);
       const col = zero ? C.textMuted : positive ? C.green : C.red;
-
       return (
         <div style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -200,13 +188,8 @@
 
     function Toggle({ checked, onChange, labelOn, labelOff }) {
       return (
-        <div
-          onClick={() => onChange(!checked)}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer",
-            userSelect: "none", minWidth: 240, justifyContent: "center",
-          }}
-        >
+        <div onClick={() => onChange(!checked)}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", userSelect: "none", minWidth: 240, justifyContent: "center" }}>
           <div style={{
             width: 36, height: 20, borderRadius: 10, position: "relative", flexShrink: 0,
             background: checked ? C.blue : C.cardBorder, transition: "background 0.2s",
@@ -350,13 +333,7 @@
       );
 
       return (
-        <div style={{
-          background: C.pageBg, minHeight: "100vh",
-          fontFamily: "'Google Sans', 'Segoe UI', system-ui, sans-serif",
-          color: C.white, padding: "24px 32px", maxWidth: 1400, margin: "0 auto",
-        }}>
-          <SectionHeader>Projections</SectionHeader>
-
+        <div>
           <SubHeader>Your Current Baseline</SubHeader>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10, marginBottom: 8 }}>
             <Card label="Prospects / Month" value={fmt(b.prospectsBookedPerMonth)} color={C.blue} />
@@ -471,43 +448,156 @@
     }
 
     // ============================================================
-    // App wrapper — handles loading, errors, and API fetch
+    // App — manages filters, loading, and data fetching
     // ============================================================
     function App() {
+      const urlClientId = getClientId();
+      const [clientId, setClientId] = useState(urlClientId);
+      const [clients, setClients] = useState([]);
+      const [showClientPicker, setShowClientPicker] = useState(!urlClientId);
+      const [closers, setClosers] = useState([]);
+      const [selectedCloser, setSelectedCloser] = useState("");
+      const [startDate, setStartDate] = useState("");
+      const [endDate, setEndDate] = useState("");
+      const [minDate, setMinDate] = useState("");
+      const [maxDate, setMaxDate] = useState("");
       const [baseline, setBaseline] = useState(null);
       const [error, setError] = useState(null);
       const [loading, setLoading] = useState(true);
+      const [fetching, setFetching] = useState(false);
 
+      // If no clientId in URL, fetch client list
       useEffect(() => {
-        const params = getParams();
-
-        if (!params.clientId || !params.startDate || !params.endDate) {
-          setError("Missing required URL parameters. Expected: ?clientId=xxx&startDate=2025-01-01&endDate=2025-01-31");
-          setLoading(false);
-          return;
+        if (!urlClientId) {
+          fetch(`${API_URL}?action=clients`)
+            .then(r => r.json())
+            .then(data => {
+              setClients(data.clients || []);
+              setLoading(false);
+            })
+            .catch(err => {
+              setError(err.message);
+              setLoading(false);
+            });
         }
+      }, []);
 
-        const url = new URL(API_URL);
-        url.searchParams.set("clientId", params.clientId);
-        url.searchParams.set("startDate", params.startDate);
-        url.searchParams.set("endDate", params.endDate);
-        if (params.closerId) url.searchParams.set("closerId", params.closerId);
+      // When clientId is set (from URL or picker), load closers + date range + baseline
+      useEffect(() => {
+        if (!clientId) return;
 
-        fetch(url.toString())
-          .then(res => {
-            if (!res.ok) throw new Error(`API returned ${res.status}`);
-            return res.json();
-          })
+        setLoading(true);
+        setShowClientPicker(false);
+        setBaseline(null);
+        setSelectedCloser("");
+
+        Promise.all([
+          fetch(`${API_URL}?action=closers&clientId=${clientId}`).then(r => r.json()),
+          fetch(`${API_URL}?action=daterange&clientId=${clientId}`).then(r => r.json()),
+        ]).then(([closersData, dateData]) => {
+          setClosers(closersData.closers || []);
+          const min = dateData.min_date || "";
+          const max = dateData.max_date || "";
+          setMinDate(min);
+          setMaxDate(max);
+          const maxD = new Date(max + "T00:00:00Z");
+          const defaultStart = new Date(maxD);
+          defaultStart.setDate(defaultStart.getDate() - 90);
+          const startStr = defaultStart.toISOString().slice(0, 10);
+          const effectiveStart = startStr < min ? min : startStr;
+          setStartDate(effectiveStart);
+          setEndDate(max);
+          return fetchBaseline(effectiveStart, max, "", clientId);
+        }).catch(err => {
+          setError(err.message);
+          setLoading(false);
+        });
+      }, [clientId]);
+
+      const fetchBaseline = useCallback((sd, ed, closer, cid) => {
+        const id = cid || clientId;
+        setFetching(true);
+        let url = `${API_URL}?clientId=${id}&startDate=${sd}&endDate=${ed}`;
+        if (closer) url += `&closerId=${closer}`;
+
+        return fetch(url)
+          .then(r => r.json())
           .then(data => {
             if (data.error) throw new Error(data.error);
             setBaseline(data);
             setLoading(false);
+            setFetching(false);
           })
           .catch(err => {
             setError(err.message);
             setLoading(false);
+            setFetching(false);
           });
-      }, []);
+      }, [clientId]);
+
+      const handleApply = () => {
+        if (startDate && endDate) {
+          fetchBaseline(startDate, endDate, selectedCloser);
+        }
+      };
+
+      // Client picker screen
+      if (showClientPicker && !clientId) {
+        if (loading) {
+          return (
+            <div className="loading-screen">
+              <div className="loading-spinner"></div>
+              Loading clients...
+            </div>
+          );
+        }
+        return (
+          <div style={{
+            background: C.pageBg, minHeight: "100vh", display: "flex",
+            alignItems: "center", justifyContent: "center",
+            fontFamily: "'Google Sans', 'Segoe UI', system-ui, sans-serif",
+          }}>
+            <div style={{
+              background: C.cardBg, border: `1px solid ${C.cardBorder}`, borderRadius: 12,
+              padding: "40px 48px", maxWidth: 480, width: "100%", textAlign: "center",
+            }}>
+              <h1 style={{ margin: "0 0 8px", fontSize: 26, fontWeight: 700, color: C.white }}>
+                CloserMetrix <span style={{ color: C.blue }}>INSIGHT</span>
+              </h1>
+              <p style={{ margin: "0 0 28px", fontSize: 14, color: C.textSecondary }}>
+                Select a client to view projections
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {clients.map(c => (
+                  <button key={c.client_id} onClick={() => setClientId(c.client_id)}
+                    style={{
+                      background: C.sectionBg, border: `1px solid ${C.cardBorder}`,
+                      borderRadius: 6, padding: "12px 16px", cursor: "pointer",
+                      textAlign: "left", transition: "border-color 0.2s",
+                    }}
+                    onMouseOver={e => e.currentTarget.style.borderColor = C.blue}
+                    onMouseOut={e => e.currentTarget.style.borderColor = C.cardBorder}
+                  >
+                    <div style={{ fontSize: 15, fontWeight: 600, color: C.white }}>
+                      {c.name || c.company_name || c.client_id}
+                    </div>
+                    {c.company_name && c.name !== c.company_name && (
+                      <div style={{ fontSize: 12, color: C.textSecondary, marginTop: 2 }}>{c.company_name}</div>
+                    )}
+                  </button>
+                ))}
+                {clients.length === 0 && (
+                  <div style={{ color: C.textMuted, fontSize: 14, padding: 20 }}>
+                    No clients found
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+        );
+      }
 
       if (loading) {
         return (
@@ -523,12 +613,63 @@
           <div className="error-screen">
             <div style={{ fontSize: 24, fontWeight: 700 }}>⚠️ Error</div>
             <div>{error}</div>
-            <code>{window.location.href}</code>
           </div>
         );
       }
 
-      return <Projections baseline={baseline} />;
+      return (
+        <div style={{
+          background: C.pageBg, minHeight: "100vh",
+          fontFamily: "'Google Sans', 'Segoe UI', system-ui, sans-serif",
+          color: C.white, padding: "24px 32px", maxWidth: 1400, margin: "0 auto",
+        }}>
+          {/* Header with filters */}
+          <div style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            marginBottom: 24, background: C.headerBg, padding: "14px 24px", borderRadius: 8,
+            flexWrap: "wrap", gap: 12,
+          }}>
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: -0.3 }}>
+              CloserMetrix <span style={{ color: C.blue }}>INSIGHT</span>
+            </h1>
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11, color: C.textSecondary, textTransform: "uppercase" }}>Closer</span>
+                <select value={selectedCloser} onChange={e => setSelectedCloser(e.target.value)}>
+                  <option value="">All Closers</option>
+                  {closers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11, color: C.textSecondary, textTransform: "uppercase" }}>From</span>
+                <input type="date" value={startDate} min={minDate} max={endDate}
+                  onChange={e => setStartDate(e.target.value)} />
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 11, color: C.textSecondary, textTransform: "uppercase" }}>To</span>
+                <input type="date" value={endDate} min={startDate} max={maxDate}
+                  onChange={e => setEndDate(e.target.value)} />
+              </div>
+              <button onClick={handleApply} disabled={fetching}
+                style={{
+                  background: fetching ? C.cardBorder : C.blue, color: C.headerBg,
+                  border: "none", padding: "7px 18px", borderRadius: 4,
+                  fontSize: 13, fontWeight: 700, cursor: fetching ? "default" : "pointer",
+                  opacity: fetching ? 0.6 : 1,
+                }}>
+                {fetching ? "Loading..." : "Apply"}
+              </button>
+            </div>
+          </div>
+
+          <SectionHeader>Projections</SectionHeader>
+
+          {/* Overlay while fetching new data */}
+          <div style={{ position: "relative", opacity: fetching ? 0.4 : 1, transition: "opacity 0.3s" }}>
+            <Projections baseline={baseline} />
+          </div>
+        </div>
+      );
     }
 
     ReactDOM.createRoot(document.getElementById("root")).render(<App />);
